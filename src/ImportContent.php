@@ -2,6 +2,8 @@
 
 namespace Modules;
 
+use DB;
+
 class ImportContent {
 
 	public $queue;
@@ -30,7 +32,7 @@ class ImportContent {
 		$queue = json_decode(get_option('Queue', 'ImportProducts'));
 		if(!$queue) {
 			$queue = [];
-			$sourceKey = (int)app('request')->get('source');
+			$sourceKey = app('request')->input('source');
 			$source = $this->getSource($sourceKey);
 			if($sourceKey && $source) {
 				$queue[] = [
@@ -67,27 +69,24 @@ class ImportContent {
 	public function start() {
 		$saved = 0;
 		$total = 0;
-		$logFile = null;
 		session_set('scrape_halt', false);
 
-        $queue = $this->initQueue();
+        	$queue = $this->initQueue();
 		if(!count($queue)) {
 			return json_encode(['error' => 'Empty queue']);
 		}
-		dd($queue);
 
 		$resume = app('request')->get('resume', 0);
-		DB::transaction(function() use($saved, $total, $logFile) {
-			$source = import_get_source(end($queue));
-			$logFile = realpath(__DIR__.'/cache/'. $source['name'] .'.txt');
+		DB::transaction(function() use($queue, $saved, $total, $resume) {
+			$source = $this->getSource(end($queue)->tool);
+			$logFile = realpath(__DIR__.'/../cache/'. $source['name'] .'.txt');
 
 			// Load cached source
-			$xmlSrc = realpath(__DIR__.'/cache/'. $source['name'] .'.xml');
+			$xmlSrc = realpath(__DIR__.'/../cache/'. $source['name'] .'.xml');
 			$xml = @simplexml_load_file($xmlSrc);
 			if(!$xml) {
 				// Fetch remote and cache
 				$xml = @simplexml_load_file($source['remote']['src']);
-				d($xmlSrc);
 				file_put_contents($xmlSrc, $xml->asXML());
 			}
 			if(!$xml) return ['error' => 'Error while fetching source'];

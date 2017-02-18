@@ -7,8 +7,6 @@
 
 	<module type="admin/modules/info" />
 
-	<?php dd(mw('import_content')->getSources()4 as $s => $source): ?>
-
 	<div class="mw-ui-row">
 		<div class="mw-ui-col" style="padding-right: 1em;">
 			<label>
